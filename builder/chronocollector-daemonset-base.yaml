@@ -1,0 +1,179 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: chronocollector-daemonset
+  name: chronocollector-daemonset
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app: chronocollector-daemonset
+  name: chronocollector-daemonset
+rules:
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - statefulsets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - nodes
+  - pods
+  - services
+  - endpoints
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - nodes/metrics
+  verbs:
+  - get
+- apiGroups:
+  - discovery.k8s.io
+  resources:
+  - endpointslices
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+    - servicemonitors
+  verbs:
+    - get
+    - list
+    - watch
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app: chronocollector-daemonset
+  name: chronocollector-daemonset
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: chronocollector-daemonset
+subjects:
+- kind: ServiceAccount
+  name: chronocollector-daemonset
+  namespace: default
+---
+apiVersion: v1
+data:
+  config.yml: |
+    # Will be dynamically created
+kind: ConfigMap
+metadata:
+  labels:
+    app: chronocollector-daemonset
+  name: chronocollector-daemonset
+  namespace: default
+---
+apiVersion: v1
+data:
+  address: <add-base64-encoded-token-here>
+  api-token: <add-base64-encoded-token-here>
+kind: Secret
+metadata:
+  labels:
+    app: chronocollector-daemonset
+  name: chronocollector-daemonset
+  namespace: default
+type: Opaque
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: chronocollector-daemonset
+  name: chronocollector-daemonset
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: chronocollector-daemonset
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "3030"
+        prometheus.io/scrape: "true"
+      labels:
+        app: chronocollector-daemonset
+    spec:
+      containers:
+      - env:
+        - name: GATEWAY_ADDRESS
+          valueFrom:
+            secretKeyRef:
+              key: address
+              name: chronocollector-daemonset
+        - name: API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: api-token
+              name: chronocollector-daemonset
+        - name: KUBERNETES_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: KUBERNETES_CLUSTER_NAME
+          value: default
+        - name: KUBERNETES_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        image: gcr.io/chronosphereio/chronocollector:v0.100.1
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 3030
+          initialDelaySeconds: 5
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: chronocollector-daemonset
+        ports:
+        - containerPort: 3030
+          name: http
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+          requests:
+            cpu: 1000m
+            memory: 512Mi
+        volumeMounts:
+        - mountPath: /etc/chronocollector
+          name: chronocollector-daemonset
+      serviceAccount: chronocollector-daemonset
+      terminationGracePeriodSeconds: 5
+      volumes:
+      - configMap:
+          name: chronocollector-daemonset
+        name: chronocollector-daemonset
+  updateStrategy:
+    type: RollingUpdate

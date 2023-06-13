@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "chronosphereconfigs"
+version = "0.1.0"
+description = ""
+authors = ["Brad Hjelmar <bhjelmar@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pyyaml = "^6.0"
+streamlit = "^1.22.0"
+loguru = "^0.7.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

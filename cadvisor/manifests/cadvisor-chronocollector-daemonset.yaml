@@ -1,0 +1,265 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: chronocollector-cadvisor
+  name: chronocollector-cadvisor
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app: chronocollector-cadvisor
+  name: chronocollector-cadvisor
+rules:
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - statefulsets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - nodes
+  - pods
+  - services
+  - endpoints
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - nodes/metrics
+  verbs:
+  - get
+- apiGroups:
+  - discovery.k8s.io
+  resources:
+  - endpointslices
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+    - servicemonitors
+  verbs:
+    - get
+    - list
+    - watch
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app: chronocollector-cadvisor
+  name: chronocollector-cadvisor
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: chronocollector-cadvisor
+subjects:
+- kind: ServiceAccount
+  name: chronocollector-cadvisor
+  namespace: default
+---
+apiVersion: v1
+data:
+  config.yml: |
+    logging:
+      level: ${LOGGING_LEVEL:info}
+
+    metrics:
+      scope:
+        prefix: "chronocollector"
+        tags: {}
+      prometheus:
+        handlerPath: /metrics
+      sanitization: prometheus
+      samplingRate: 1.0
+      extended: none
+
+    wrapper:
+      listenAddress: "${LISTEN_ADDRESS:0.0.0.0:3029}"
+      logFilter:
+        enabled: ${LOG_FILTERING_ENABLED:false}
+      metrics:
+        scope:
+          prefix: "chronocollector"
+          tags: {}
+        prometheus:
+          handlerPath: /metrics
+        sanitization: prometheus
+        samplingRate: 1.0
+        extended: none
+
+    listenAddress: "${LISTEN_ADDRESS:0.0.0.0:3030}"
+
+    labels:
+      defaults:
+        tenant_k8s_cluster: ${KUBERNETES_CLUSTER_NAME:""}
+
+    backend:
+      type: ${BACKEND_TYPE:gateway}
+      annotatedMetrics: ${BACKEND_ANNOTATED_METRICS:false}
+      gateway:
+        address: ${GATEWAY_ADDRESS:""}
+        serverName: ${GATEWAY_SERVER_NAME:""}
+        insecure: ${GATEWAY_INSECURE:false}
+        cert: ${GATEWAY_CERT:""}
+        certSkipVerify: ${GATEWAY_CERT_SKIP_VERIFY:false}
+        apiTokenFile: ${API_TOKEN_FILE:""}
+      compressionFormat: "snappy"
+      connectionPooling:
+        enabled: false
+        poolSize: 0
+
+    discovery:
+      kubernetes:
+        enabled: true
+        serviceMonitorsEnabled: false
+        endpointsDiscoveryEnabled: false
+        useEndpointSlices: false
+        kubeSystemEndpointsDiscoveryEnabled: false
+        podMatchingStrategy: service_monitors_only
+        kubeletMonitoring:
+          port: 10250
+          bearerTokenFile: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+          labelsToAugment: []
+          annotationsToAugment: []
+          kubeletMetricsEnabled: true
+          cadvisorMetricsEnabled: true
+          probesMetricsEnabled: true
+      prometheus:
+        enabled: true
+        scrape_configs:
+          - job_name: 'chronocollector'
+            scrape_interval: 30s
+            scrape_timeout: 30s
+            static_configs:
+              - targets: ['localhost:3030']
+            relabel_configs:
+              - target_label: "instance"
+                replacement: ${KUBERNETES_POD_NAME:""}
+                action: replace
+
+    kubernetes:
+      client:
+        outOfCluster: ${KUBERNETES_CLIENT_OUT_OF_CLUSTER:false}
+      processor:
+        annotationsPrefix: ${KUBERNETES_PROCESSOR_ANNOTATIONS_PREFIX:"prometheus.io/"}
+
+    scrape:
+      defaults:
+        scrapeInterval: "30s"
+        scrapeTimeout: "30s"
+kind: ConfigMap
+metadata:
+  labels:
+    app: chronocollector-cadvisor
+  name: chronocollector-cadvisor
+  namespace: default
+---
+apiVersion: v1
+data:
+  address: <add-base64-encoded-token-here>
+  api-token: <add-base64-encoded-token-here>
+kind: Secret
+metadata:
+  labels:
+    app: chronocollector-cadvisor
+  name: chronocollector-cadvisor
+  namespace: default
+type: Opaque
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: chronocollector-cadvisor
+  name: chronocollector-cadvisor
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: chronocollector-cadvisor
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "3030"
+        prometheus.io/scrape: "true"
+      labels:
+        app: chronocollector-cadvisor
+    spec:
+      containers:
+      - env:
+        - name: GATEWAY_ADDRESS
+          valueFrom:
+            secretKeyRef:
+              key: address
+              name: chronocollector-cadvisor
+        - name: API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: api-token
+              name: chronocollector-cadvisor
+        - name: KUBERNETES_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: KUBERNETES_CLUSTER_NAME
+          value: default
+        - name: KUBERNETES_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        image: gcr.io/chronosphereio/chronocollector:v0.100.1
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 3030
+          initialDelaySeconds: 5
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: chronocollector-cadvisor
+        ports:
+        - containerPort: 3030
+          name: http
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+          requests:
+            cpu: 1000m
+            memory: 512Mi
+        volumeMounts:
+        - mountPath: /etc/chronocollector
+          name: chronocollector-cadvisor
+      serviceAccount: chronocollector-cadvisor
+      terminationGracePeriodSeconds: 5
+      volumes:
+      - configMap:
+          name: chronocollector-cadvisor
+        name: chronocollector-cadvisor
+  updateStrategy:
+    type: RollingUpdate
