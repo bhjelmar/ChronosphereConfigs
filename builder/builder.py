@@ -1023,7 +1023,7 @@ def create_config_file(config_options, config_output):
                 config_options["global"]["request_memory"]
 
             doc["spec"]["template"]["spec"]["containers"][0][
-                "image"] = config_options["global"]["chronocollector_image_version"]
+                "image"] = f"gcr.io/chronosphereio/chronocollector:{config_options['global']['chronocollector_image_version']}"
 
             if config_options["otel"]["enabled"]:
                 doc["spec"]["template"]["spec"]["containers"][0]["ports"].append({

@@ -157,7 +157,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         image: gcr.io/chronosphereio/chronocollector:v0.101.0
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3
           httpGet:
