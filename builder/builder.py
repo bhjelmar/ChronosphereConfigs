@@ -2,6 +2,7 @@ import base64
 import re
 from pathlib import Path
 
+import requests
 import streamlit as st
 from collections import defaultdict
 
@@ -109,6 +110,28 @@ def get_global_config(config_options, general_tab, advanced_tab):
             st.error(
                 "Collector Name must be lowercase alphanumeric characters or '-', and must start and end with an alphanumeric character")
             config_options["block_submit"] = True
+
+        if config_options["deployment_type"] == "daemonset" or config_options["deployment_type"] == "deployment":
+            response = requests.get("https://gcr.io/v2/chronosphereio/chronocollector/tags/list")
+            if not response.ok:
+                st.error("Unable to fetch latest chronocollector version from GCR. Defaulting to v0.101.0")
+                available_versions = ["v0.101.0"]
+            else:
+                manifests = response.json()["manifest"]
+                sorted_by_time = sorted(manifests.items(), key=lambda x: x[1]["timeUploadedMs"], reverse=True)
+                filter_by_tag = [manifest for manifest in sorted_by_time if manifest[1]["tag"]]
+                available_versions = []
+                for manifest in filter_by_tag:
+                    version = manifest[1]["tag"][0]
+                    if version.startswith("v"):
+                        available_versions.append(version)
+            global_col1, global_col2 = st.columns(2)
+            show_release_candidates = global_col1.selectbox("Show Release Candidate Versions", [True, False], index=1)
+            if not show_release_candidates:
+                available_versions = [version for version in available_versions if "release-candidate" not in version]
+            config_options["global"]["chronocollector_image_version"] = global_col2.selectbox("Chronocollector Version",
+                                                                                              available_versions,
+                                                                                              help="[Release Notes](https://docs.chronosphere.io/v3/documentation/admin/release-notes/collector)foo/configgen")
 
     with advanced_tab:
         st.markdown("## Advanced Config Options")
@@ -661,7 +684,6 @@ Only use this when you are certain about the resolution of the data sent, with a
                                                                                  disabled=not config_options["otel"][
                                                                                      "httpEnabled"])
 
-
             st.markdown("---")
             st.markdown("### Jaeger")
             traces_col1, traces_col2 = st.columns(2)
@@ -999,6 +1021,9 @@ def create_config_file(config_options, config_output):
                 "request_cpu"]
             doc["spec"]["template"]["spec"]["containers"][0]["resources"]["requests"]["memory"] = \
                 config_options["global"]["request_memory"]
+
+            doc["spec"]["template"]["spec"]["containers"][0][
+                "image"] = config_options["global"]["chronocollector_image_version"]
 
             if config_options["otel"]["enabled"]:
                 doc["spec"]["template"]["spec"]["containers"][0]["ports"].append({
