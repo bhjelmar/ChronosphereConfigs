@@ -1100,24 +1100,16 @@ def create_config_file(config_options, config_output):
 def finalize(config_options, finish_tab):
     with finish_tab:
         if config_options["block_submit"]:
-            st.error("Either tenant or api token is missing/invalid")
-            return
+            st.warning("Either tenant or api token is missing/invalid")
 
         if not config_options["global"]["in_cluster"]:
             st.markdown("To run the collector, run the following command:")
             st.code(
-                "GATEWAY_ADDRESS={}.chronosphere.io:443 API_TOKEN={} PATH_TO_FILE/COLLECTOR_BINARY -f PATH_TO_FILE/chronocollector.yaml".format(
+                "GATEWAY_ADDRESS={} API_TOKEN={} PATH_TO_FILE/COLLECTOR_BINARY -f PATH_TO_FILE/chronocollector.yaml".format(
                     config_options["global"]["tenant"], config_options["global"]["api_token"]))
         else:
             st.markdown("To deploy the collector, run the following command:")
             st.code(f"kubectl apply -f PATH_TO_FILE/{config_options['global']['collector_name']}.yaml")
-
-        if config_options["global"]["tenant"] == "":
-            st.error("Tenant is required")
-            return
-        if config_options["global"]["api_token"] == "":
-            st.error("API Token is required")
-            return
 
         config_output = generate_config(config_options)
         output_yaml = create_config_file(config_options, config_output)
