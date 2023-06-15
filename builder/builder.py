@@ -75,7 +75,7 @@ def get_global_config(config_options, general_tab, advanced_tab):
         config_options["global"]["in_cluster"] = in_cluster
 
         global_col1, global_col2 = st.columns(2)
-        config_options["global"]["tenant"] = global_col1.text_input("Tenant", placeholder="acme.chronosphere.io:443")
+        config_options["global"]["tenant"] = global_col1.text_input("Tenant", placeholder="acme")
         config_options["global"]["api_token"] = global_col2.text_input("API Token", value="", type="password")
 
         config_options["block_submit"] = False
@@ -84,13 +84,45 @@ def get_global_config(config_options, general_tab, advanced_tab):
         # if tenant doesn't end with chronosphere.io:443
         if config_options["global"]["tenant"] and not config_options["global"]["tenant"].endswith(
                 "chronosphere.io:443"):
-            global_col1.error("Tenant must end with chronosphere.io:443")
-            config_options["block_submit"] = True
+            first_part = config_options["global"]["tenant"].split(".")[0]
+            config_options["global"]["tenant"] = f"{first_part}.chronosphere.io:443"
+
+        connected_to_tenant = False
+        # telnet to tenant to check if it's valid
+        if config_options["global"]["tenant"]:
+            tenant = config_options["global"]["tenant"]
+            with st.spinner(f"Checking if {tenant} is a valid tenant"):
+                try:
+                    requests.get(f"https://{tenant}", timeout=1)
+                    global_col1.success(f"Successfully connected to {tenant}")
+                    connected_to_tenant = True
+                except Exception:
+                    global_col1.error(f"Unable to connect to {tenant}")
+                    config_options["block_submit"] = True
+        else:
+            config_options["global"]["tenant"] = "<tenant>"
 
         # if token is not 64 chars
-        if config_options["global"]["api_token"] and len(config_options["global"]["api_token"]) != 64:
-            global_col2.error("API Token appears to be invalid")
-            config_options["block_submit"] = True
+        if config_options["global"]["api_token"]:
+            if len(config_options["global"]["api_token"]) != 64:
+                global_col2.error("API Token appears to be malformed")
+                config_options["block_submit"] = True
+            else:
+                if connected_to_tenant:
+                    with st.spinner("Checking if API Token is valid"):
+                        try:
+                            auth = {"Authorization": f"Bearer {config_options['global']['api_token']}"}
+                            response = requests.get(f"https://{tenant}/api/v1/config/monitors", headers=auth, timeout=1)
+                            if response.ok:
+                                global_col2.success("Authentication successful")
+                            else:
+                                global_col2.error("Authentication failed")
+                                config_options["block_submit"] = True
+                        except Exception:
+                            global_col2.error("Authentication failed")
+                            config_options["block_submit"] = True
+        else:
+            config_options["global"]["api_token"] = "<api_token>"
 
         if not config_options["global"]["tenant"] or not config_options["global"]["api_token"]:
             config_options["block_submit"] = True
@@ -1088,8 +1120,14 @@ def create_config_file(config_options, config_output):
     if config_options["deployment_type"] == "daemonset" or config_options["deployment_type"] == "deployment":
         for doc in base_yaml:
             if doc["kind"] == "Secret":
-                doc["data"]["address"] = base64Encode(config_options["global"]["tenant"])
-                doc["data"]["api-token"] = base64Encode(config_options["global"]["api_token"])
+                if config_options["global"]["tenant"] == "<tenant>":
+                    doc["data"]["address"] = "<tenant>"
+                else:
+                    doc["data"]["address"] = base64Encode(config_options["global"]["tenant"])
+                if config_options["global"]["api_token"] == "<api_token>":
+                    doc["data"]["api-token"] = "<api_token>"
+                else:
+                    doc["data"]["api-token"] = base64Encode(config_options["global"]["api_token"])
 
             if doc["kind"] == "ConfigMap":
                 doc["data"]["config.yml"] = AsLiteral(yaml.dump(config_output))
