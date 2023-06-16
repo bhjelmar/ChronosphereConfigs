@@ -131,7 +131,7 @@ def get_global_config(config_options, general_tab, advanced_tab):
         config_options["global"]["collector_name"] = global_col1.text_input(
             "Collector Name (must be unique per cluster!)",
             value=f"chronocollector-{config_options['deployment_type']}")
-        config_options["global"]["collector_namespace"] = global_col2.text_input("Collector Namespace", value="default")
+        config_options["global"]["collector_namespace"] = global_col2.text_input("Collector Namespace", value="chronosphere")
 
         global_col1, global_col2 = st.columns(2)
         config_options["global"]["scrape_interval"] = global_col1.text_input("Default Scrape Interval", value="30s")
