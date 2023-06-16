@@ -19,7 +19,7 @@ def main():
     config_options = recursivedict()
 
     general_tab, advanced_tab, scrape_tab, sink_tab, finish_tab = st.tabs(
-        ["General", "Advanced", "Scrape", "Sink", "Finish"])
+        ["General", "Advanced", "Scrape", "Push", "Finish"])
 
     get_global_config(config_options, general_tab, advanced_tab)
 
