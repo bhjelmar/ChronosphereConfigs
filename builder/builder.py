@@ -134,8 +134,8 @@ def get_global_config(config_options, general_tab, advanced_tab):
         config_options["global"]["collector_namespace"] = global_col2.text_input("Collector Namespace", value="chronosphere")
 
         global_col1, global_col2 = st.columns(2)
-        config_options["global"]["scrape_interval"] = global_col1.text_input("Default Scrape Interval", value="30s")
-        config_options["global"]["scrape_timeout"] = global_col2.text_input("Default Scrape Timeout", value="30s")
+        config_options["global"]["scrape_interval"] = global_col1.text_input("Default Scrape Interval", value="60s")
+        config_options["global"]["scrape_timeout"] = global_col2.text_input("Default Scrape Timeout", value="60s")
 
         collector_name_regex = r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
         if not re.match(collector_name_regex, config_options["global"]["collector_name"]):
@@ -838,8 +838,8 @@ def generate_config(config_options):
             config_output["discovery"]["prometheus"]["scrape_configs"] = [
                 {
                     "job_name": "chronocollector",
-                    "scrape_interval": "30s",
-                    "scrape_timeout": "30s",
+                    "scrape_interval": config_options["global"]["scrape_interval"],
+                    "scrape_timeout": config_options["global"]["scrape_timeout"],
                     "static_configs": [
                         {
                             "targets": ["localhost:3030"]
