@@ -1112,6 +1112,17 @@ def create_config_file(config_options, config_output):
                     "targetPort": "zipkin"
                 })
 
+        if doc["kind"] == "ClusterRole":
+            if not config_options["use_service_monitors"]:
+                rules = doc["rules"]
+                rules_to_keep = []
+                for rule in rules:
+                    if "resources" in rule and "servicemonitors" in rule["resources"]:
+                        continue
+                    else:
+                        rules_to_keep.append(rule)
+                doc["rules"] = rules_to_keep
+
     def base64Encode(s: str, encoding="ISO-8859-1"):
         strBytes = bytes(s, encoding=encoding)
         encodedBytes = base64.standard_b64encode(strBytes)
