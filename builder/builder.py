@@ -354,8 +354,10 @@ def get_kubernetes_config(config_options: dict, scrape_tab):
             st.markdown("---")
             st.markdown("### Annotations Discovery Config")
             annotations_col1, annotations_col2 = st.columns(2)
-            config_options["annotations"]["annotation_prefix"] = annotations_col1.text_input("Annotation Prefix",
-                                                                                             value="prometheus.io/")
+            config_options["annotations"]["annotation_prefix"] = annotations_col1.text_input("Annotation Prefix",                                                                               value="prometheus.io/")
+        else:
+            config_options["annotations"]["annotation_prefix"] = "prometheus.io/"
+
         use_prometheus = discovery_col3.checkbox("Enable Prometheus Discovery")
         if use_prometheus:
             st.markdown("---")
@@ -1015,13 +1017,17 @@ def create_config_file(config_options, config_output):
         base_txt = open("builder/chronocollector-daemonset-base.yaml").read()
         base_txt = base_txt \
             .replace("chronocollector-daemonset", config_options["global"]["collector_name"]) \
-            .replace("namespace: default", f"namespace: {config_options['global']['collector_namespace']}")
+            .replace("namespace: default", f"namespace: {config_options['global']['collector_namespace']}") \
+            .replace("prometheus.io/scrape", f"{config_options['annotations']['annotation_prefix']}scrape") \
+            .replace("prometheus.io/port", f"{config_options['annotations']['annotation_prefix']}port")
         base_yaml = yaml.safe_load_all(base_txt)
     if config_options["deployment_type"] == "deployment":
         base_txt = open("builder/chronocollector-deployment-base.yaml").read()
         base_txt = base_txt \
             .replace("chronocollector-deployment", config_options["global"]["collector_name"]) \
-            .replace("namespace: default", f"namespace: {config_options['global']['collector_namespace']}")
+            .replace("namespace: default", f"namespace: {config_options['global']['collector_namespace']}") \
+            .replace("prometheus.io/scrape", f"{config_options['annotations']['annotation_prefix']}scrape") \
+            .replace("prometheus.io/port", f"{config_options['annotations']['annotation_prefix']}port")
         base_yaml = yaml.safe_load_all(base_txt)
 
     base_yaml = list(base_yaml)
