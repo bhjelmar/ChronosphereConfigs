@@ -131,7 +131,8 @@ def get_global_config(config_options, general_tab, advanced_tab):
         config_options["global"]["collector_name"] = global_col1.text_input(
             "Collector Name (must be unique per cluster!)",
             value=f"chronocollector-{config_options['deployment_type']}")
-        config_options["global"]["collector_namespace"] = global_col2.text_input("Collector Namespace", value="chronosphere")
+        config_options["global"]["collector_namespace"] = global_col2.text_input("Collector Namespace",
+                                                                                 value="chronosphere")
 
         global_col1, global_col2 = st.columns(2)
         config_options["global"]["scrape_interval"] = global_col1.text_input("Default Scrape Interval", value="60s")
@@ -354,7 +355,8 @@ def get_kubernetes_config(config_options: dict, scrape_tab):
             st.markdown("---")
             st.markdown("### Annotations Discovery Config")
             annotations_col1, annotations_col2 = st.columns(2)
-            config_options["annotations"]["annotation_prefix"] = annotations_col1.text_input("Annotation Prefix",                                                                               value="prometheus.io/")
+            config_options["annotations"]["annotation_prefix"] = annotations_col1.text_input("Annotation Prefix",
+                                                                                             value="prometheus.io/")
         else:
             config_options["annotations"]["annotation_prefix"] = "prometheus.io/"
 
@@ -553,11 +555,11 @@ def get_ingestion_config(config_options, sink_tab):
             dogstatsd_enabled_str = dogstatsd_col1.selectbox("DogStatsD", ["off", "on"])
             config_options["dogstatsd"]["enabled"] = True if dogstatsd_enabled_str == "on" else False
             config_options["dogstatsd"]["listenAddress"] = dogstatsd_col2.text_input("Listen Address",
-                                                                                      value="0.0.0.0:9125",
-                                                                                      disabled=not
-                                                                                      config_options["dogstatsd"][
-                                                                                          "enabled"],
-                                                                                      help="The address the UDP server listens on. The default is 0.0.0.0:9125. This address is what your DogStatsD client should point to.")
+                                                                                     value="0.0.0.0:9125",
+                                                                                     disabled=not
+                                                                                     config_options["dogstatsd"][
+                                                                                         "enabled"],
+                                                                                     help="The address the UDP server listens on. The default is 0.0.0.0:9125. This address is what your DogStatsD client should point to.")
             dogstatsd_col1, dogstatsd_col2 = st.columns(2)
             config_options["dogstatsd"]["mode"] = dogstatsd_col1.selectbox("Mode",
                                                                            ["regular", "graphite", "graphite_expanded"],
@@ -1037,7 +1039,10 @@ def create_config_file(config_options, config_output):
             or config_options["zipkin"]["enabled"] \
             or config_options["dogstatsd"]["enabled"] \
             or config_options["statsd"]["enabled"] \
-            or config_options["carbon"]["enabled"]:
+            or config_options["carbon"]["enabled"] \
+            or config_options["prometheus"]["enabled"] \
+            or config_options["openmetrics"]["enabled"] \
+            or config_options["pushgateway"]["enabled"]:
         service = {}
         service["apiVersion"] = "v1"
         service["kind"] = "Service"
@@ -1159,6 +1164,14 @@ def create_config_file(config_options, config_output):
                     "port": int(config_options["carbon"]["listenAddress"].split(":")[1]),
                     "protocol": "UDP",
                     "targetPort": "carbon"
+                })
+            if config_options["prometheus"]["enabled"] or config_options["openmetrics"]["enabled"] or \
+                    config_options["pushgateway"]["enabled"]:
+                doc["spec"]["ports"].append({
+                    "name": "http",
+                    "port": 3030,
+                    "protocol": "TCP",
+                    "targetPort": "http"
                 })
 
         if doc["kind"] == "ClusterRole":
