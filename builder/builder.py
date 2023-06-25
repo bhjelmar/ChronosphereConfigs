@@ -1213,56 +1213,66 @@ def create_config_file(config_options, config_output):
 
 def finalize(config_options, finish_tab):
     with finish_tab:
-        if config_options["block_submit"]:
-            st.warning("Either tenant or api token is missing/invalid")
 
-        if not config_options["global"]["in_cluster"]:
-            st.markdown("To run the collector, run the following command:")
-            st.code(
-                "GATEWAY_ADDRESS={} API_TOKEN={} PATH_TO_FILE/COLLECTOR_BINARY -f PATH_TO_FILE/chronocollector.yaml".format(
-                    config_options["global"]["tenant"], config_options["global"]["api_token"]))
-        else:
-            st.markdown("To deploy the collector, run the following command:")
-            st.code(f"kubectl apply -f PATH_TO_FILE/{config_options['global']['collector_name']}.yaml")
+        manifest_tab, helm_tab = st.tabs(["Manifest", "Helm"])
 
-        config_output = generate_config(config_options)
-        output_yaml = create_config_file(config_options, config_output)
+        with manifest_tab:
 
-        logger.info(f"config generated for tenant {config_options['global']['tenant']}")
+            if config_options["block_submit"]:
+                st.warning("Either tenant or api token is missing/invalid")
 
-        st.download_button(
-            label="Download Config",
-            data=output_yaml,
-            file_name=f"{config_options['global']['collector_name']}.yaml",
-            mime="text/yaml"
-        )
-
-        try:
-            with open(f"{config_options['global']['collector_name']}.yaml", "w") as f:
-                f.write(output_yaml)
-            subprocess.check_output(["helmify", "-f", f"{config_options['global']['collector_name']}.yaml",
-                                     f"{config_options['global']['collector_name']}"])
-            os.remove(f"{config_options['global']['collector_name']}.yaml")
-            shutil.make_archive(f"{config_options['global']['collector_name']}", "zip",
-                                f"{config_options['global']['collector_name']}")
-            shutil.rmtree(f"{config_options['global']['collector_name']}")
-            data = open(f"{config_options['global']['collector_name']}.zip", "rb")
-            if data is not None:
-                st.download_button(
-                    label="Download Helm Chart",
-                    data=data,
-                    file_name=f"{config_options['global']['collector_name']}.zip",
-                    mime="application/zip"
-                )
+            if not config_options["global"]["in_cluster"]:
+                st.markdown("To run the collector, run the following command:")
+                st.code(
+                    "GATEWAY_ADDRESS={} API_TOKEN={} PATH_TO_FILE/COLLECTOR_BINARY -f PATH_TO_FILE/chronocollector.yaml".format(
+                        config_options["global"]["tenant"], config_options["global"]["api_token"]))
             else:
+                st.markdown("To deploy the collector, run the following command:")
+                st.code(f"kubectl apply -f PATH_TO_FILE/{config_options['global']['collector_name']}.yaml")
+
+            config_output = generate_config(config_options)
+            output_yaml = create_config_file(config_options, config_output)
+
+            logger.info(f"config generated for tenant {config_options['global']['tenant']}")
+
+            st.download_button(
+                label="Download Config",
+                data=output_yaml,
+                file_name=f"{config_options['global']['collector_name']}.yaml",
+                mime="text/yaml"
+            )
+
+            st.code(output_yaml, language="yaml", line_numbers=True)
+
+        with helm_tab:
+
+            st.markdown("Alternatively, deploy the helm chart with `helm install <name> <path to chart>`. Make sure to update the values.yaml file with your tenant and api token.")
+
+            try:
+                with open(f"{config_options['global']['collector_name']}.yaml", "w") as f:
+                    f.write(output_yaml)
+                subprocess.check_output(["helmify", "-f", f"{config_options['global']['collector_name']}.yaml",
+                                         f"{config_options['global']['collector_name']}"])
+                os.remove(f"{config_options['global']['collector_name']}.yaml")
+                shutil.make_archive(f"{config_options['global']['collector_name']}", "zip",
+                                    f"{config_options['global']['collector_name']}")
+                shutil.rmtree(f"{config_options['global']['collector_name']}")
+                data = open(f"{config_options['global']['collector_name']}.zip", "rb")
+                if data is not None:
+                    st.download_button(
+                        label="Download Helm Chart",
+                        data=data,
+                        file_name=f"{config_options['global']['collector_name']}.zip",
+                        mime="application/zip"
+                    )
+                else:
+                    st.error("Error generating helm chart, likely due to unset tenant or api token.")
+
+                os.remove(f"{config_options['global']['collector_name']}.zip")
+            except Exception as e:
+                logger.error(e)
                 st.error("Error generating helm chart, likely due to unset tenant or api token.")
 
-            os.remove(f"{config_options['global']['collector_name']}.zip")
-        except Exception as e:
-            logger.error(e)
-            st.error("Error generating helm chart")
-
-        st.code(output_yaml, language="yaml", line_numbers=True)
 
 
 if __name__ == '__main__':
