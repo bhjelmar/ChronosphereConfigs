@@ -550,7 +550,7 @@ def get_ingestion_config(config_options, sink_tab):
             dogstatsd_col1, dogstatsd_col2 = st.columns(2)
             dogstatsd_enabled_str = dogstatsd_col1.selectbox("DogStatsD", ["off", "on"])
             config_options["dogstatsd"]["enabled"] = True if dogstatsd_enabled_str == "on" else False
-            config_options["dogstatsd"]["listen_address"] = dogstatsd_col2.text_input("Listen Address",
+            config_options["dogstatsd"]["listenAddress"] = dogstatsd_col2.text_input("Listen Address",
                                                                                       value="0.0.0.0:9125",
                                                                                       disabled=not
                                                                                       config_options["dogstatsd"][
@@ -919,7 +919,7 @@ def generate_config(config_options):
         config_output["push"] = {}
         config_output["push"]["dogstatsd"] = {}
         config_output["push"]["dogstatsd"]["enabled"] = True
-        config_output["push"]["dogstatsd"]["listenAddress"] = config_options["dogstatsd"]["listen_address"]
+        config_output["push"]["dogstatsd"]["listenAddress"] = config_options["dogstatsd"]["listenAddress"]
         config_output["push"]["dogstatsd"]["mode"] = config_options["dogstatsd"]["mode"]
         config_output["push"]["dogstatsd"]["nameLabelName"] = config_options["dogstatsd"]["nameLabelName"]
         if len(config_options["dogstatsd"]["labels"]) > 0:
@@ -1026,14 +1026,16 @@ def create_config_file(config_options, config_output):
 
     base_yaml = list(base_yaml)
 
-    if config_options["otel"]["enabled"] or config_options["jaeger"]["enabled"] or config_options["zipkin"]["enabled"]:
+    if config_options["otel"]["enabled"] \
+            or config_options["jaeger"]["enabled"] \
+            or config_options["zipkin"]["enabled"] \
+            or config_options["dogstatsd"]["enabled"]:
         service = {}
         service["apiVersion"] = "v1"
         service["kind"] = "Service"
         service["metadata"] = {}
         service["metadata"]["labels"] = {}
         service["metadata"]["labels"]["app"] = config_options["global"]["collector_name"]
-        service["metadata"]["labels"]["component"] = "collector-tracing"
         service["metadata"]["name"] = f"{config_options['global']['collector_name']}"
         service["metadata"]["namespace"] = config_options["global"]["collector_namespace"]
         service["spec"] = {}
@@ -1081,6 +1083,24 @@ def create_config_file(config_options, config_output):
                     "name": "zipkin",
                     "protocol": "TCP"
                 })
+            if config_options["dogstatsd"]["enabled"]:
+                doc["spec"]["template"]["spec"]["containers"][0]["ports"].append({
+                    "containerPort": int(config_options["dogstatsd"]["listenAddress"].split(":")[1]),
+                    "name": "dogstatsd",
+                    "protocol": "UDP"
+                })
+            if config_options["statsd"]["enabled"]:
+                doc["spec"]["template"]["spec"]["containers"][0]["ports"].append({
+                    "containerPort": int(config_options["statsd"]["listenAddress"].split(":")[1]),
+                    "name": "statsd",
+                    "protocol": "UDP"
+                })
+            if config_options["carbon"]["enabled"]:
+                doc["spec"]["template"]["spec"]["containers"][0]["ports"].append({
+                    "containerPort": int(config_options["carbon"]["listenAddress"].split(":")[1]),
+                    "name": "carbon",
+                    "protocol": "UDP"
+                })
 
         if doc["kind"] == "Service":
             if config_options["otel"]["enabled"]:
@@ -1110,6 +1130,27 @@ def create_config_file(config_options, config_output):
                     "port": int(config_options["zipkin"]["listenAddress"].split(":")[1]),
                     "protocol": "TCP",
                     "targetPort": "zipkin"
+                })
+            if config_options["dogstatsd"]["enabled"]:
+                doc["spec"]["ports"].append({
+                    "name": "dogstatsd",
+                    "port": int(config_options["dogstatsd"]["listenAddress"].split(":")[1]),
+                    "protocol": "UDP",
+                    "targetPort": "dogstatsd"
+                })
+            if config_options["statsd"]["enabled"]:
+                doc["spec"]["ports"].append({
+                    "name": "statsd",
+                    "port": int(config_options["statsd"]["listenAddress"].split(":")[1]),
+                    "protocol": "UDP",
+                    "targetPort": "statsd"
+                })
+            if config_options["carbon"]["enabled"]:
+                doc["spec"]["ports"].append({
+                    "name": "carbon",
+                    "port": int(config_options["carbon"]["listenAddress"].split(":")[1]),
+                    "protocol": "UDP",
+                    "targetPort": "carbon"
                 })
 
         if doc["kind"] == "ClusterRole":
