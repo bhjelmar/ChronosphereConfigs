@@ -1029,7 +1029,9 @@ def create_config_file(config_options, config_output):
     if config_options["otel"]["enabled"] \
             or config_options["jaeger"]["enabled"] \
             or config_options["zipkin"]["enabled"] \
-            or config_options["dogstatsd"]["enabled"]:
+            or config_options["dogstatsd"]["enabled"] \
+            or config_options["statsd"]["enabled"] \
+            or config_options["carbon"]["enabled"]:
         service = {}
         service["apiVersion"] = "v1"
         service["kind"] = "Service"
