@@ -1,5 +1,8 @@
 import base64
+import os
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 import requests
@@ -1233,6 +1236,31 @@ def finalize(config_options, finish_tab):
             file_name=f"{config_options['global']['collector_name']}.yaml",
             mime="text/yaml"
         )
+
+        try:
+            with open(f"{config_options['global']['collector_name']}.yaml", "w") as f:
+                f.write(output_yaml)
+            subprocess.check_output(["helmify", "-f", f"{config_options['global']['collector_name']}.yaml",
+                                     f"{config_options['global']['collector_name']}"])
+            os.remove(f"{config_options['global']['collector_name']}.yaml")
+            shutil.make_archive(f"{config_options['global']['collector_name']}", "zip",
+                                f"{config_options['global']['collector_name']}")
+            shutil.rmtree(f"{config_options['global']['collector_name']}")
+            data = open(f"{config_options['global']['collector_name']}.zip", "rb")
+            if data is not None:
+                st.download_button(
+                    label="Download Helm Chart",
+                    data=data,
+                    file_name=f"{config_options['global']['collector_name']}.zip",
+                    mime="application/zip"
+                )
+            else:
+                st.error("Error generating helm chart, likely due to unset tenant or api token.")
+
+            os.remove(f"{config_options['global']['collector_name']}.zip")
+        except Exception as e:
+            logger.error(e)
+            st.error("Error generating helm chart")
 
         st.code(output_yaml, language="yaml", line_numbers=True)
 

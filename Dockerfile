@@ -51,30 +51,19 @@ COPY poetry.lock pyproject.toml ./
 # install runtime deps - uses $POETRY_VIRTUALENVS_IN_PROJECT internally
 RUN poetry install --no-dev
 
-
-## `development` image is used during development / testing
-#FROM python-base as development
-#ENV FASTAPI_ENV=development
-#WORKDIR $PYSETUP_PATH
-#
-## copy in our built poetry + venv
-#COPY --from=builder-base $POETRY_HOME $POETRY_HOME
-#COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
-#
-## quicker install as runtime deps are already installed
-#RUN poetry install
-#
-## will become mountpoint of our code
-#WORKDIR /builder
-#
-#EXPOSE 8501
-#HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
-#ENTRYPOINT ["streamlit", "run", "builder/builder.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# install helmify
+RUN  apt-get update \
+  && apt-get install -y wget \
+  && rm -rf /var/lib/apt/lists/*
+RUN wget https://github.com/arttor/helmify/releases/download/v0.4.4/helmify_0.4.4_Linux_arm64.tar.gz
+RUN tar -xvf helmify_0.4.4_Linux_arm64.tar.gz
+RUN mv helmify /usr/bin/helmify
 
 # `production` image used for runtime
 FROM python-base as production
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 COPY ./builder /builder/
+COPY --from=builder-base /usr/bin/helmify /usr/bin/helmify
 WORKDIR .
 
 EXPOSE 8501
