@@ -836,7 +836,7 @@ def generate_config(config_options):
         elif not config_options["use_service_monitors"] and config_options["use_annotations"]:
             config_output["discovery"]["kubernetes"]["podMatchingStrategy"] = "annotations_first"
         else:
-            config_output["discovery"]["kubernetes"]["podMatchingStrategy"] = "all"
+            config_output["discovery"]["kubernetes"]["podMatchingStrategy"] = "service_monitors_only"
 
     config_output["discovery"]["prometheus"] = {}
 
@@ -1314,6 +1314,7 @@ export CHRONOSPHERE_API_TOKEN={config_options['global']['api_token']}""")
             st.code(f"""helm install \\
     --set {camel_case_name}.address=${{CHRONOSPHERE_ORG_NAME}}.chronosphere.io:443 \\
     --set {camel_case_name}.apiToken=${{CHRONOSPHERE_API_TOKEN}} \\
+    --namespace {config_options['global']['collector_namespace']} \\
     {config_options['global']['collector_name']} \\
     ./{config_options['global']['collector_name']}""")
 

@@ -169,7 +169,7 @@ spec:
         volumeMounts:
         - mountPath: /etc/chronocollector
           name: chronocollector-daemonset
-      serviceAccount: chronocollector-daemonset
+      serviceAccountName: chronocollector-daemonset
       terminationGracePeriodSeconds: 5
       volumes:
       - configMap:
