@@ -1220,7 +1220,7 @@ def finalize(config_options, finish_tab):
         with manifest_tab:
 
             if config_options["block_submit"]:
-                st.warning(f"Either the tenant or api token is missing. Please fill out the required fields.")
+                st.warning("Something is wrong with either your tenant or api token. Please check your inputs.")
 
             if not config_options["global"]["in_cluster"]:
                 st.markdown("To run the collector, run the following command:")
@@ -1248,7 +1248,7 @@ def finalize(config_options, finish_tab):
         with helm_tab:
 
             if config_options["block_submit"]:
-                st.warning(f"Either the tenant or api token is missing. Please fill out the required fields.")
+                st.warning("Something is wrong with either your tenant or api token. Please check your inputs.")
 
             try:
                 with st.spinner("Generating helm chart..."):
