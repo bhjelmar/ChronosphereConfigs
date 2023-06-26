@@ -84,8 +84,9 @@ def get_global_config(config_options, general_tab, advanced_tab):
         config_options["global"]["in_cluster"] = in_cluster
 
         global_col1, global_col2 = st.columns(2)
-        config_options["global"]["tenant"] = global_col1.text_input("Tenant", placeholder="acme")
-        config_options["global"]["api_token"] = global_col2.text_input("API Token", value="", type="password")
+        config_options["global"]["tenant"] = global_col1.text_input("Tenant (optional)", placeholder="acme")
+        config_options["global"]["api_token"] = global_col2.text_input("API Token (optional)", value="",
+                                                                       type="password")
 
         config_options["block_submit"] = False
 
@@ -110,6 +111,7 @@ def get_global_config(config_options, general_tab, advanced_tab):
                     config_options["block_submit"] = True
         else:
             config_options["global"]["tenant"] = "<tenant>"
+            config_options["block_submit"] = True
 
         # if token is not 64 chars
         if config_options["global"]["api_token"]:
@@ -132,6 +134,7 @@ def get_global_config(config_options, general_tab, advanced_tab):
                             config_options["block_submit"] = True
         else:
             config_options["global"]["api_token"] = "<api_token>"
+            config_options["block_submit"] = True
 
         if not config_options["global"]["tenant"] or not config_options["global"]["api_token"]:
             config_options["block_submit"] = True
@@ -1217,7 +1220,8 @@ def finalize(config_options, finish_tab):
 
         if not config_options["global"]["in_cluster"]:
             if config_options["block_submit"]:
-                st.warning("Something is wrong with either your tenant or api token. Please check your inputs.")
+                st.info(
+                    "Something is wrong with either your tenant or api token. Please check your inputs. The config will still be generated, but things may not work as expected until you fix the issue.")
 
             if not config_options["global"]["in_cluster"]:
                 st.markdown("To run the collector, run the following command:")
@@ -1248,7 +1252,8 @@ def finalize(config_options, finish_tab):
             with manifest_tab:
 
                 if config_options["block_submit"]:
-                    st.warning("Something is wrong with either your tenant or api token. Please check your inputs.")
+                    st.info(
+                        "Something is wrong with either your tenant or api token. Please check your inputs. The config will still be generated, but things may not work as expected until you fix the issue.")
 
                 if not config_options["global"]["in_cluster"]:
                     st.markdown("To run the collector, run the following command:")
@@ -1276,7 +1281,8 @@ def finalize(config_options, finish_tab):
 
             with helm_tab:
                 if config_options["block_submit"]:
-                    st.warning("Something is wrong with either your tenant or api token. Please check your inputs.")
+                    st.info(
+                        "Something is wrong with either your tenant or api token. Please check your inputs. The config will still be generated, but things may not work as expected until you fix the issue.")
 
                 try:
                     with st.spinner("Generating helm chart..."):
@@ -1335,11 +1341,12 @@ export CHRONOSPHERE_API_TOKEN={config_options['global']['api_token']}""", langua
                 st.markdown("Then run:")
 
                 st.code(f"""helm install \\
-        --set {camel_case_name}.address=${{CHRONOSPHERE_ORG_NAME}}.chronosphere.io:443 \\
-        --set {camel_case_name}.apiToken=${{CHRONOSPHERE_API_TOKEN}} \\
-        --namespace {config_options['global']['collector_namespace']} \\
-        {config_options['global']['collector_name']} \\
-        ./{config_options['global']['collector_name']}""", language="bash")
+    --set {camel_case_name}.address=${{CHRONOSPHERE_ORG_NAME}}.chronosphere.io:443 \\
+    --set {camel_case_name}.apiToken=${{CHRONOSPHERE_API_TOKEN}} \\
+    --create-namespace \\
+    --namespace {config_options['global']['collector_namespace']} \\
+    {config_options['global']['collector_name']} \\
+    ./{config_options['global']['collector_name']}""", language="bash")
 
 
 if __name__ == '__main__':
