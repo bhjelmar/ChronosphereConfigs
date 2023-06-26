@@ -1226,7 +1226,8 @@ def finalize(config_options, finish_tab):
                         config_options["global"]["tenant"], config_options["global"]["api_token"]), language="bash")
             else:
                 st.markdown("To deploy the collector, run the following command:")
-                st.code(f"kubectl apply -f PATH_TO_FILE/{config_options['global']['collector_name']}.yaml", language="bash")
+                st.code(f"kubectl apply -f PATH_TO_FILE/{config_options['global']['collector_name']}.yaml",
+                        language="bash")
 
             config_output = generate_config(config_options)
             output_yaml = create_config_file(config_options, config_output)
@@ -1256,7 +1257,8 @@ def finalize(config_options, finish_tab):
                             config_options["global"]["tenant"], config_options["global"]["api_token"]), language="bash")
                 else:
                     st.markdown("To deploy the collector, run the following command:")
-                    st.code(f"kubectl apply -f PATH_TO_FILE/{config_options['global']['collector_name']}.yaml", language="bash")
+                    st.code(f"kubectl apply -f PATH_TO_FILE/{config_options['global']['collector_name']}.yaml",
+                            language="bash")
 
                 config_output = generate_config(config_options)
                 output_yaml = create_config_file(config_options, config_output)
@@ -1282,7 +1284,8 @@ def finalize(config_options, finish_tab):
                         if config_options["global"]["tenant"] == "<tenant>":
                             output_yaml = output_yaml.replace("address: <tenant>", f"address: {base64Encode('foo')}")
                         if config_options["global"]["api_token"] == "<api_token>":
-                            output_yaml = output_yaml.replace("api-token: <api_token>", f"api-token: {base64Encode('bar')}")
+                            output_yaml = output_yaml.replace("api-token: <api_token>",
+                                                              f"api-token: {base64Encode('bar')}")
 
                         with open(f"{config_options['global']['collector_name']}.yaml", "w") as f:
                             f.write(output_yaml)
@@ -1327,7 +1330,7 @@ def finalize(config_options, finish_tab):
                 st.markdown("Set the following environment variables:")
 
                 st.code(f"""export CHRONOSPHERE_ORG_NAME={config_options['global']['tenant'].split('.')[0]}
-    export CHRONOSPHERE_API_TOKEN={config_options['global']['api_token']}""", language="bash")
+export CHRONOSPHERE_API_TOKEN={config_options['global']['api_token']}""", language="bash")
 
                 st.markdown("Then run:")
 
