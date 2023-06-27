@@ -513,8 +513,59 @@ def get_ingestion_config(config_options, sink_tab):
     with sink_tab:
         st.markdown("## Ingestion Config Options")
 
-        dogstatsd, graphite, openmetrics, pushgateway, traces = st.tabs(
-            ["DogStatsD", "Graphite", "Prometheus/OpenMetrics", "Pushgateway", "Traces"])
+        traces, dogstatsd, graphite, openmetrics, pushgateway = st.tabs(
+            ["Traces", "DogStatsD", "Graphite", "Prometheus/OpenMetrics", "Pushgateway"])
+
+        # Traces
+        with traces:
+            st.markdown("### Traces")
+
+            if config_options["deployment_type"] == "daemonset":
+                st.warning(
+                    "The recommended way to install the Collector to receive trace data is with a Kubernetes Deployment. ")
+
+            st.write(
+                "For more information, view [documentation](https://docs.chronosphere.io/documentation/admin/collector/tracing).")
+            st.markdown("---")
+
+            st.markdown("### Otel")
+            traces_col1, traces_col2 = st.columns(2)
+            config_options["otel"]["enabled"] = traces_col1.selectbox("Enabled", ["off", "on"], key="otel_enabled")
+            config_options["otel"]["enabled"] = True if config_options["otel"]["enabled"] == "on" else False
+            config_options["otel"]["listenAddress"] = traces_col2.text_input("Listen Address", value="0.0.0.0:4317",
+                                                                             key="otel_listen_address",
+                                                                             disabled=not config_options["otel"][
+                                                                                 "enabled"])
+            config_options["otel"]["httpEnabled"] = traces_col1.selectbox("HTTP Enabled", ["off", "on"],
+                                                                          key="otel_http_enabled",
+                                                                          disabled=not config_options["otel"][
+                                                                              "enabled"])
+            config_options["otel"]["httpEnabled"] = True if config_options["otel"]["httpEnabled"] == "on" else False
+            config_options["otel"]["httpListenAddress"] = traces_col2.text_input("HTTP Listen Address",
+                                                                                 value="0.0.0.0:4318",
+                                                                                 key="otel_http_listen_address",
+                                                                                 disabled=not config_options["otel"][
+                                                                                     "httpEnabled"])
+
+            st.markdown("---")
+            st.markdown("### Jaeger")
+            traces_col1, traces_col2 = st.columns(2)
+            config_options["jaeger"]["enabled"] = traces_col1.selectbox("Enabled", ["off", "on"], key="jaeger_enabled")
+            config_options["jaeger"]["enabled"] = True if config_options["jaeger"]["enabled"] == "on" else False
+            config_options["jaeger"]["listenAddress"] = traces_col2.text_input("Listen Address", value="0.0.0.0:6831",
+                                                                               key="jaeger_listen_address",
+                                                                               disabled=not config_options["jaeger"][
+                                                                                   "enabled"])
+
+            st.markdown("---")
+            st.markdown("### Zipkin")
+            traces_col1, traces_col2 = st.columns(2)
+            config_options["zipkin"]["enabled"] = traces_col1.selectbox("Enabled", ["off", "on"], key="zipkin_enabled")
+            config_options["zipkin"]["enabled"] = True if config_options["zipkin"]["enabled"] == "on" else False
+            config_options["zipkin"]["listenAddress"] = traces_col2.text_input("Listen Address", value="0.0.0.0:9411",
+                                                                               key="zipkin_listen_address",
+                                                                               disabled=not config_options["zipkin"][
+                                                                                   "enabled"])
 
         with dogstatsd:
             st.markdown("### DogStatsD")
@@ -700,57 +751,6 @@ Only use this when you are certain about the resolution of the data sent, with a
                                                                                   key="pushgateway_enabled")
             config_options["pushgateway"]["enabled"] = True if config_options["pushgateway"][
                                                                    "enabled"] == "on" else False
-
-        # Traces
-        with traces:
-            st.markdown("### Traces")
-
-            if config_options["deployment_type"] == "daemonset":
-                st.warning(
-                    "The recommended way to install the Collector to receive trace data is with a Kubernetes Deployment. ")
-
-            st.write(
-                "For more information, view [documentation](https://docs.chronosphere.io/documentation/admin/collector/tracing).")
-            st.markdown("---")
-
-            st.markdown("### Otel")
-            traces_col1, traces_col2 = st.columns(2)
-            config_options["otel"]["enabled"] = traces_col1.selectbox("Enabled", ["off", "on"], key="otel_enabled")
-            config_options["otel"]["enabled"] = True if config_options["otel"]["enabled"] == "on" else False
-            config_options["otel"]["listenAddress"] = traces_col2.text_input("Listen Address", value="0.0.0.0:4317",
-                                                                             key="otel_listen_address",
-                                                                             disabled=not config_options["otel"][
-                                                                                 "enabled"])
-            config_options["otel"]["httpEnabled"] = traces_col1.selectbox("HTTP Enabled", ["off", "on"],
-                                                                          key="otel_http_enabled",
-                                                                          disabled=not config_options["otel"][
-                                                                              "enabled"])
-            config_options["otel"]["httpEnabled"] = True if config_options["otel"]["httpEnabled"] == "on" else False
-            config_options["otel"]["httpListenAddress"] = traces_col2.text_input("HTTP Listen Address",
-                                                                                 value="0.0.0.0:4318",
-                                                                                 key="otel_http_listen_address",
-                                                                                 disabled=not config_options["otel"][
-                                                                                     "httpEnabled"])
-
-            st.markdown("---")
-            st.markdown("### Jaeger")
-            traces_col1, traces_col2 = st.columns(2)
-            config_options["jaeger"]["enabled"] = traces_col1.selectbox("Enabled", ["off", "on"], key="jaeger_enabled")
-            config_options["jaeger"]["enabled"] = True if config_options["jaeger"]["enabled"] == "on" else False
-            config_options["jaeger"]["listenAddress"] = traces_col2.text_input("Listen Address", value="0.0.0.0:6831",
-                                                                               key="jaeger_listen_address",
-                                                                               disabled=not config_options["jaeger"][
-                                                                                   "enabled"])
-
-            st.markdown("---")
-            st.markdown("### Zipkin")
-            traces_col1, traces_col2 = st.columns(2)
-            config_options["zipkin"]["enabled"] = traces_col1.selectbox("Enabled", ["off", "on"], key="zipkin_enabled")
-            config_options["zipkin"]["enabled"] = True if config_options["zipkin"]["enabled"] == "on" else False
-            config_options["zipkin"]["listenAddress"] = traces_col2.text_input("Listen Address", value="0.0.0.0:9411",
-                                                                               key="zipkin_listen_address",
-                                                                               disabled=not config_options["zipkin"][
-                                                                                   "enabled"])
 
 
 def generate_config(config_options):
