@@ -513,16 +513,16 @@ def get_ingestion_config(config_options, sink_tab):
     with sink_tab:
         st.markdown("## Ingestion Config Options")
 
+        if config_options["deployment_type"] == "daemonset":
+            st.warning(
+                "When configuring the Chronocollector to receive pushed data, it is not recommended to use a Kubernetes DaemonSet type deployment. We recommend using a Kubernetes Deployment instead. This can be selected in the General tab.")
+
         traces, dogstatsd, graphite, openmetrics, pushgateway = st.tabs(
             ["Traces", "DogStatsD", "Graphite", "Prometheus/OpenMetrics", "Pushgateway"])
 
         # Traces
         with traces:
             st.markdown("### Traces")
-
-            if config_options["deployment_type"] == "daemonset":
-                st.warning(
-                    "The recommended way to install the Collector to receive trace data is with a Kubernetes Deployment. ")
 
             st.write(
                 "For more information, view [documentation](https://docs.chronosphere.io/documentation/admin/collector/tracing).")
