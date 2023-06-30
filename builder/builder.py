@@ -1297,6 +1297,14 @@ def finalize(config_options, finish_tab):
                             f.write(output_yaml)
                         subprocess.check_output(["helmify", "-f", f"{config_options['global']['collector_name']}.yaml",
                                                  f"{config_options['global']['collector_name']}"])
+
+                        with open(f"{config_options['global']['collector_name']}/templates/{config_options['global']['collector_name']}.yaml", "r") as f:
+                            output_yaml = f.read()
+                            search_str = "{{ include \"" + config_options['global']['collector_name'] + ".fullname\" . }}-"
+                            output_yaml = output_yaml.replace(search_str, "")
+                        with open(f"{config_options['global']['collector_name']}/templates/{config_options['global']['collector_name']}.yaml", "w") as f:
+                            f.write(output_yaml)
+
                         shutil.make_archive(f"{config_options['global']['collector_name']}", "zip",
                                             f"{config_options['global']['collector_name']}")
                         data = open(f"{config_options['global']['collector_name']}.zip", "rb")
