@@ -1301,11 +1301,20 @@ def finalize(config_options, finish_tab):
                         subprocess.check_output(["helmify", "-f", f"{config_options['global']['collector_name']}.yaml",
                                                  f"{config_options['global']['collector_name']}"])
 
-                        with open(f"{config_options['global']['collector_name']}/templates/{config_options['global']['collector_name']}.yaml", "r") as f:
+                        with open(
+                                f"{config_options['global']['collector_name']}/templates/{config_options['global']['collector_name']}.yaml",
+                                "r") as f:
                             output_yaml = f.read()
-                            search_str = "{{ include \"" + config_options['global']['collector_name'] + ".fullname\" . }}-"
+                            # for some reason, helmify concatenates the name of the collector together with the name of the chart for each resource
+                            # this is a hack to remove the collector name from the chart name, so that the chart name is just the name of the collector
+                            # if we don't do this, the resource names can be > 64 characters, which is not allowed
+                            search_str = f"-{config_options['global']['collector_name']}"
                             output_yaml = output_yaml.replace(search_str, "")
-                        with open(f"{config_options['global']['collector_name']}/templates/{config_options['global']['collector_name']}.yaml", "w") as f:
+
+                            logger.info(output_yaml)
+                        with open(
+                                f"{config_options['global']['collector_name']}/templates/{config_options['global']['collector_name']}.yaml",
+                                "w") as f:
                             f.write(output_yaml)
 
                         shutil.make_archive(f"{config_options['global']['collector_name']}", "zip",
