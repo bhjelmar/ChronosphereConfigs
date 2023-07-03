@@ -157,8 +157,11 @@ def get_global_config(config_options, general_tab, advanced_tab):
             config_options["block_submit"] = True
 
         if config_options["deployment_type"] == "daemonset" or config_options["deployment_type"] == "deployment":
-            response = requests.get("https://gcr.io/v2/chronosphereio/chronocollector/tags/list")
-            if not response.ok:
+            try:
+                response = requests.get("https://gcr.io/v2/chronosphereio/chronocollector/tags/list")
+            except:
+                response = None
+            if not response or not response.ok:
                 st.error("Unable to fetch latest chronocollector version from GCR. Defaulting to v0.101.0")
                 available_versions = ["v0.101.0"]
             else:
