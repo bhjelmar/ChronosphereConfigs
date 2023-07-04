@@ -142,7 +142,8 @@ def get_global_config(config_options, general_tab, advanced_tab):
         global_col1, global_col2 = st.columns(2)
         config_options["global"]["collector_name"] = global_col1.text_input(
             "Collector Name (must be unique per cluster!)",
-            value=f"chronocollector-{config_options['deployment_type']}")
+            value=f"chronocollector-{config_options['deployment_type']}"
+        )
         config_options["global"]["collector_namespace"] = global_col2.text_input("Collector Namespace",
                                                                                  value="chronosphere")
 
@@ -154,6 +155,10 @@ def get_global_config(config_options, general_tab, advanced_tab):
         if not re.match(collector_name_regex, config_options["global"]["collector_name"]):
             st.error(
                 "Collector Name must be lowercase alphanumeric characters or '-', and must start and end with an alphanumeric character")
+            config_options["block_submit"] = True
+        if not len(config_options["global"]["collector_name"]) <= 53:
+            st.error(f"Collector Name must be less than or equal to 53 characters. Will be automatically truncated to {config_options['global']['collector_name'][:53]}")
+            config_options["global"]["collector_name"] = config_options["global"]["collector_name"][:53]
             config_options["block_submit"] = True
 
         if config_options["deployment_type"] == "daemonset" or config_options["deployment_type"] == "deployment":
@@ -1346,9 +1351,11 @@ def finalize(config_options, finish_tab):
                 except:
                     pass
 
-                camel_case_name = ''.join(
-                    x for x in config_options['global']['collector_name'].title().replace("-", "") if not x.isspace())
-                camel_case_name = camel_case_name[0].lower() + camel_case_name[1:]
+                if config_options["global"]["collector_name"]:
+                    camel_case_name = ''.join(x for x in config_options['global']['collector_name'].title().replace("-", "") if not x.isspace())
+                    camel_case_name = camel_case_name[0].lower() + camel_case_name[1:]
+                else:
+                    camel_case_name = ""
 
                 st.markdown(f"Unzip the helm chart")
                 st.code(f"tar -xvf {config_options['global']['collector_name']}.tgz", language="bash")
