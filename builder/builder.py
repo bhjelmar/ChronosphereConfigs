@@ -665,29 +665,29 @@ def get_ingestion_config(config_options, sink_tab):
 
             st.markdown("---")
             dogstatsd_col1, dogstatsd_col2 = st.columns(2)
-            config_options["dogstatsd"]["aggregations"]["enabled"] = dogstatsd_col1.selectbox("Aggregations",
+            config_options["dogstatsd"]["aggregation"]["enabled"] = dogstatsd_col1.selectbox("Aggregation",
                                                                                               ["off", "on"],
-                                                                                              help="Enables or disables aggregations for DogStatsD metrics.")
-            dogstatsd_agg_disabled = False if config_options["dogstatsd"]["aggregations"]["enabled"] == "on" else True
-            config_options["dogstatsd"]["aggregations"]["enabled"] = not dogstatsd_agg_disabled
-            config_options["dogstatsd"]["aggregations"]["counters"]["interval"] = dogstatsd_col2.text_input(
+                                                                                              help="Enables or disables aggregation for DogStatsD metrics.")
+            dogstatsd_agg_disabled = False if config_options["dogstatsd"]["aggregation"]["enabled"] == "on" else True
+            config_options["dogstatsd"]["aggregation"]["enabled"] = not dogstatsd_agg_disabled
+            config_options["dogstatsd"]["aggregation"]["counters"]["interval"] = dogstatsd_col2.text_input(
                 "Counters Interval", value="10s", help="The interval at which to aggregate counters.",
                 disabled=dogstatsd_agg_disabled)
 
             dogstatsd_col1, dogstatsd_col2 = st.columns(2)
-            config_options["dogstatsd"]["aggregations"]["gauges"]["interval"] = dogstatsd_col1.text_input(
+            config_options["dogstatsd"]["aggregation"]["gauges"]["interval"] = dogstatsd_col1.text_input(
                 "Gauges Interval",
                 value="10s",
                 help="The interval at which to aggregate gauges.",
                 disabled=dogstatsd_agg_disabled)
-            config_options["dogstatsd"]["aggregations"]["timers"]["interval"] = dogstatsd_col2.text_input(
+            config_options["dogstatsd"]["aggregation"]["timers"]["interval"] = dogstatsd_col2.text_input(
                 "Timers Interval",
                 value="10s",
                 help="The interval at which to aggregate timers.",
                 disabled=dogstatsd_agg_disabled)
             dogstatsd_col1, dogstatsd_col2 = st.columns(2)
-            config_options["dogstatsd"]["aggregations"]["inactiveExpireAt"] = dogstatsd_col1.text_input(
-                "Inactive Expire At", value="2m", help="The time after which to expire inactive aggregations.",
+            config_options["dogstatsd"]["aggregation"]["inactiveExpireAfter"] = dogstatsd_col1.text_input(
+                "Inactive Expire At", value="2m", help="The time after which to expire inactive aggregation.",
                 disabled=dogstatsd_agg_disabled)
 
         with graphite:
@@ -952,19 +952,19 @@ def generate_config(config_options):
                 config_output["push"]["dogstatsd"]["labels"][label["key"]] = label["value"]
         if config_options["dogstatsd"]["prefix"]:
             config_output["push"]["dogstatsd"]["prefix"] = config_options["dogstatsd"]["prefix"]
-        if config_options["dogstatsd"]["aggregations"]["enabled"]:
-            config_output["push"]["dogstatsd"]["aggregations"] = {}
-            config_output["push"]["dogstatsd"]["aggregations"]["counters"] = {}
-            config_output["push"]["dogstatsd"]["aggregations"]["counters"]["interval"] = \
-                config_options["dogstatsd"]["aggregations"]["counters"]["interval"]
-            config_output["push"]["dogstatsd"]["aggregations"]["gauges"] = {}
-            config_output["push"]["dogstatsd"]["aggregations"]["gauges"]["interval"] = \
-                config_options["dogstatsd"]["aggregations"]["gauges"]["interval"]
-            config_output["push"]["dogstatsd"]["aggregations"]["timers"] = {}
-            config_output["push"]["dogstatsd"]["aggregations"]["timers"]["interval"] = \
-                config_options["dogstatsd"]["aggregations"]["timers"]["interval"]
-            config_output["push"]["dogstatsd"]["aggregations"]["inactiveExpireAt"] = \
-                config_options["dogstatsd"]["aggregations"]["inactiveExpireAt"]
+        if config_options["dogstatsd"]["aggregation"]["enabled"]:
+            config_output["push"]["dogstatsd"]["aggregation"] = {}
+            config_output["push"]["dogstatsd"]["aggregation"]["counters"] = {}
+            config_output["push"]["dogstatsd"]["aggregation"]["counters"]["interval"] = \
+                config_options["dogstatsd"]["aggregation"]["counters"]["interval"]
+            config_output["push"]["dogstatsd"]["aggregation"]["gauges"] = {}
+            config_output["push"]["dogstatsd"]["aggregation"]["gauges"]["interval"] = \
+                config_options["dogstatsd"]["aggregation"]["gauges"]["interval"]
+            config_output["push"]["dogstatsd"]["aggregation"]["timers"] = {}
+            config_output["push"]["dogstatsd"]["aggregation"]["timers"]["interval"] = \
+                config_options["dogstatsd"]["aggregation"]["timers"]["interval"]
+            config_output["push"]["dogstatsd"]["aggregation"]["inactiveExpireAfter"] = \
+                config_options["dogstatsd"]["aggregation"]["inactiveExpireAfter"]
 
     if config_options["statsd"]["enabled"]:
         if "push" not in config_output:
